@@ -1,4 +1,3 @@
-```markdown
 # 🚗 Real-Time Traffic Flow Analyzer
 
 An advanced Computer Vision application designed to optimize traffic management. This project uses the YOLOv8 object detection model to detect, track, and count vehicles in real-time video feeds. It simulates smart traffic systems that can dynamically adjust signal timers based on vehicle density.
@@ -123,8 +122,8 @@ Traffic-Flow-Analyzer/
 ## 🤝 Connect with Me
 
 **[PavanKumar Aadelli]**
-*   LinkedIn: [Link to your LinkedIn Profile]
-*   Email: [Your Email Address]
+*   LinkedIn: [https://www.linkedin.com/in/pavan-kumar-aadelli-1998043a0/]
+*   Email: [pkaadelli@gmail.com]
 ```
 
 
