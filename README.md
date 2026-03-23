@@ -125,6 +125,3 @@ Traffic-Flow-Analyzer/
 *   LinkedIn: [https://www.linkedin.com/in/pavan-kumar-aadelli-1998043a0/]
 *   Email: [pkaadelli@gmail.com]
 ```
-
-
-Now you have a professional GitHub repository ready to upload
