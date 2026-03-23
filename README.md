@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/5b10a001-77ca-49f1-9e8c-6b908a497224
 
 
 ---
-
+## Live Demo - [https://trafficanalysisproject-987.streamlit.app/]
 ## 🚀 Key Features
 
 - **Real-Time Object Detection:** Utilizes the state-of-the-art YOLOv8 model for fast and accurate vehicle detection.
