@@ -1,6 +1,5 @@
-streamlit
-ultralytics
 opencv-python-headless
+ultralytics
+streamlit
 numpy
 pandas
-
