@@ -1,4 +1,5 @@
-opencv-python-headless
-ultralytics
-numpy
 streamlit
+ultralytics
+opencv-python-headless
+numpy
+pandas
