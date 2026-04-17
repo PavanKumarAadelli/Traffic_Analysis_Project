@@ -2,9 +2,7 @@ import os
 import sys
 import tempfile
 
-# 1. FORCE HEADLESS OPENCV (Safety check)
-# This line helps prevent the GL library error before we even import cv2
-os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1" 
+# Ensure we are using the correct OpenCV backend for server environments
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import streamlit as st
@@ -13,88 +11,98 @@ import numpy as np
 from ultralytics import YOLO
 
 # --------------------------------------------------------
-# SETUP
+# CONFIG
 # --------------------------------------------------------
-st.set_page_config(page_title="Traffic Flow Analyzer", layout="wide")
-st.title("🚗 Traffic Flow Analyzer")
-st.write("Upload a video to count vehicles.")
+st.set_page_config(page_title="Traffic Analyzer", layout="wide")
 
 # --------------------------------------------------------
-# LOAD MODEL
+# MODEL LOADER
 # --------------------------------------------------------
 @st.cache_resource
-def load_model():
-    # We force the model to download fresh to ensure no corruption
+def load_yolo_model():
+    # Force download of the model if missing
     return YOLO("yolov8n.pt")
 
-model = load_model()
+model = load_yolo_model()
 
 # --------------------------------------------------------
 # SIDEBAR
 # --------------------------------------------------------
-st.sidebar.header("Settings")
-conf = st.sidebar.slider("Confidence", 0.1, 1.0, 0.5)
-line_pos = st.sidebar.slider("Line Position (%)", 10, 90, 50)
-video_file = st.sidebar.file_uploader("Upload Video", type=['mp4', 'avi', 'mov'])
+st.sidebar.title("Settings")
+conf_thres = st.sidebar.slider("Confidence", 0.25, 0.90, 0.50)
+line_pct = st.sidebar.slider("Line Position (%)", 10, 90, 50)
+video_file = st.sidebar.file_uploader("Upload Video", type=["mp4", "avi", "mov"])
 
 # --------------------------------------------------------
-# MAIN LOGIC
+# MAIN PROCESSING
 # --------------------------------------------------------
-if video_file is not None and model is not None:
-    # Save temp file
+if video_file is not None:
+    
+    # Write to temp file
     with tempfile.NamedTemporaryFile(delete=False) as tfile:
         tfile.write(video_file.read())
         temp_path = tfile.name
 
     cap = cv2.VideoCapture(temp_path)
     
-    # Get video info
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    line_y = int(height * (line_pos / 100))
+    # Get dimensions
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    line_y = int(h * (line_pct / 100))
     
-    # Placeholders
-    vid_place = st.empty()
-    stat_place = st.empty()
+    # UI Holders
+    frame_holder = st.empty()
+    count_holder = st.empty()
     
-    # Counters
     count = 0
     seen_ids = set()
     
-    if st.sidebar.button("Start"):
+    if st.sidebar.button("Start Analysis"):
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
             
-            # Track
-            results = model.track(frame, persist=True, conf=conf, classes=[2, 3, 5, 7], verbose=False)
+            # Tracking
+            # persist=True is essential for counting IDs across frames
+            results = model.track(
+                frame, 
+                persist=True, 
+                conf=conf_thres, 
+                classes=[2, 3, 5, 7], # Car, Moto, Bus, Truck
+                verbose=False
+            )
             
-            # Process
-            annot_frame = frame
+            # Plotting
+            annotated_frame = frame
             
+            # Check if tracking found anything
             if results[0].boxes is not None and results[0].boxes.id is not None:
                 boxes = results[0].boxes.xywh.cpu()
                 ids = results[0].boxes.id.int().cpu().tolist()
                 
-                annot_frame = results[0].plot()
+                # Draw boxes and labels
+                annotated_frame = results[0].plot()
                 
                 # Draw Line
-                cv2.line(annot_frame, (0, line_y), (width, line_y), (0, 255, 255), 2)
+                cv2.line(annotated_frame, (0, line_y), (w, line_y), (0, 255, 255), 2)
                 
-                # Count
+                # Logic
                 for box, track_id in zip(boxes, ids):
                     _, y, _, _ = box
-                    if int(y) > line_y and track_id not in seen_ids:
-                        count += 1
-                        seen_ids.add(track_id)
+                    # Check if crossed line (Top -> Down)
+                    if int(y) > line_y:
+                        if track_id not in seen_ids:
+                            count += 1
+                            seen_ids.add(track_id)
             else:
-                cv2.line(annot_frame, (0, line_y), (width, line_y), (0, 255, 255), 2)
+                # No detections, just line
+                cv2.line(annotated_frame, (0, line_y), (w, line_y), (0, 255, 255), 2)
 
-            # Display
-            annot_frame = cv2.cvtColor(annot_frame, cv2.COLOR_BGR2RGB)
-            vid_place.image(annot_frame, channels="RGB", use_column_width=True)
-            stat_place.markdown(f"### Count: {count}")
+            # Update UI
+            annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
+            frame_holder.image(annotated_frame, channels="RGB", use_column_width=True)
+            count_holder.markdown(f"### Counted Vehicles: **{count}**")
 
         cap.release()
         os.remove(temp_path)
