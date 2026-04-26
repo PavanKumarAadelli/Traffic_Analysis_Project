@@ -9,33 +9,21 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-# --------------------------------------------------------
-# PAGE CONFIG
-# --------------------------------------------------------
 st.set_page_config(page_title="Traffic Analyzer", layout="wide")
 st.title("🚗 Traffic Flow Analyzer")
 st.markdown("Upload a video to detect and count vehicles.")
 
-# --------------------------------------------------------
-# LOAD MODEL
-# --------------------------------------------------------
 @st.cache_resource
 def load_yolo_model():
     return YOLO("yolov8n.pt")
 
 model = load_yolo_model()
 
-# --------------------------------------------------------
-# SIDEBAR
-# --------------------------------------------------------
 st.sidebar.header("Settings")
 conf = st.sidebar.slider("Confidence", 0.1, 1.0, 0.5)
 line_pct = st.sidebar.slider("Line Position (%)", 10, 90, 50)
 video_file = st.sidebar.file_uploader("Upload Video", type=["mp4", "avi", "mov"])
 
-# --------------------------------------------------------
-# MAIN LOGIC
-# --------------------------------------------------------
 if video_file is not None:
     
     # Create temp file
